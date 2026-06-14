@@ -62,33 +62,37 @@ def _conn():
 
 
 @st.cache_data(ttl="5m", show_spinner=False)
-def read_tab(worksheet: str, key_col: str | None = None) -> pd.DataFrame:
-    """
-    Baca satu tab. Jika key_col diberikan, buang baris kosong
-    (sheet ini banyak baris filler kosong di bawah data).
-    """
+def _read_tab_cached(worksheet: str, key_col: str | None = None) -> tuple:
+    """Internal cached layer — returns (DataFrame, error_str|None)."""
     try:
         df = _conn().read(worksheet=worksheet)
     except Exception as e:
-        st.warning(f"Gagal baca tab '{worksheet}': {e}")
-        return pd.DataFrame()
+        return pd.DataFrame(), str(e)
     df = df.dropna(how="all")
     if key_col and key_col in df.columns:
         df = df[df[key_col].astype(str).str.strip().ne("") & df[key_col].notna()]
-    return df.reset_index(drop=True)
+    return df.reset_index(drop=True), None
+
+
+def read_tab(worksheet: str, key_col: str | None = None) -> pd.DataFrame:
+    """
+    Baca satu tab. Jika key_col diberikan, buang baris kosong.
+    Warning ditampilkan di luar cache agar teks terbaca.
+    """
+    df, err = _read_tab_cached(worksheet, key_col)
+    if err:
+        st.warning(f"❌ Gagal baca tab **'{worksheet}'**: {err}")
+    return df
 
 
 @st.cache_data(ttl="5m", show_spinner=False)
-def read_dashboard() -> dict:
-    """
-    Parse tab 10_DASHBOARD yang berbentuk pasangan (label, nilai)
-    dikelompokkan per section. Hasil: {SECTION: {label: nilai_mentah}}.
-    """
+def _read_dashboard_cached() -> tuple:
+    """Internal cached layer — returns (dict, error_str|None)."""
     out = {s: {} for s in SECTIONS}
     try:
         raw = _conn().read(worksheet="10_DASHBOARD", header=None)
-    except Exception:
-        return out
+    except Exception as e:
+        return out, str(e)
 
     current = None
     for _, row in raw.iterrows():
@@ -98,13 +102,22 @@ def read_dashboard() -> dict:
         first = cells[0].upper()
         if first in SECTIONS:
             current = first
-            # kadang label+nilai ada di baris yang sama dengan judul section
             if len(cells) >= 3:
                 out[current][cells[1]] = cells[2]
             continue
         if current and len(cells) >= 2:
             out[current][cells[0]] = cells[1]
-    return out
+    return out, None
+
+
+def read_dashboard() -> dict:
+    """
+    Parse tab 10_DASHBOARD. Warning ditampilkan di luar cache.
+    """
+    d, err = _read_dashboard_cached()
+    if err:
+        st.warning(f"❌ Gagal baca tab **'10_DASHBOARD'**: {err}")
+    return d
 
 
 # ----------------------------------------------------------------------

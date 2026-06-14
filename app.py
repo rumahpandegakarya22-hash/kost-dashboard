@@ -238,6 +238,16 @@ with st.sidebar:
 DASH = D.read_dashboard()
 ac   = ACCENT[menu]
 
+# ── Cek koneksi (tampil di semua halaman jika ada error) ──────────────────
+_test_df, _test_err = D._read_tab_cached("1_PARAMETER")
+if _test_err:
+    st.error(
+        f"**Koneksi Google Sheets gagal.**\n\n"
+        f"Error: `{_test_err}`\n\n"
+        f"Pastikan spreadsheet sudah di-*share* ke: "
+        f"`dashboardv2@dashboard-ktd-v2.iam.gserviceaccount.com` (Editor/Viewer)."
+    )
+
 
 # ============================ EXECUTIVE ============================
 if menu == "Executive":
