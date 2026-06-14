@@ -152,8 +152,8 @@ def promosi() -> pd.DataFrame:
 
 
 def maintenance() -> pd.DataFrame:
-    a = read_tab("9_PREVENTIVE MAINTENANCE", key_col="Lokasi/Item")
-    b = read_tab("10_CORRECTIVE MAINTENANCE", key_col="Lokasi/Item")
+    a = read_tab("9_PREVENTIVE", key_col="Lokasi/Item")
+    b = read_tab("10_CORRECTIVE", key_col="Lokasi/Item")
     if not a.empty:
         a["Jenis Perawatan"] = "Preventif"
     if not b.empty:
