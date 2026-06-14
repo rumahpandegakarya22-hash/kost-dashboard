@@ -30,6 +30,26 @@ st.markdown("""
 [data-testid="stMain"] {background:#F1F5F9 !important;}
 section.main {background:#F1F5F9 !important;}
 
+/* ── Login Form ── */
+[data-testid="stForm"] {background:white;border-radius:16px;padding:8px 4px;}
+[data-testid="stForm"] p,
+[data-testid="stForm"] h1,
+[data-testid="stForm"] h2,
+[data-testid="stForm"] h3 {color:#0F172A !important;font-weight:700;}
+.stTextInput label,
+.stTextInput > div > label {color:#374151 !important;font-weight:500;font-size:13px;}
+.stTextInput input {
+    background:#F8FAFC !important;color:#0F172A !important;
+    border:1px solid #E2E8F0 !important;border-radius:8px !important;
+}
+.stTextInput input:focus {border-color:#4F46E5 !important;box-shadow:none !important;}
+[data-testid="stFormSubmitButton"] button {
+    background:#4F46E5 !important;color:white !important;
+    border:none !important;border-radius:8px !important;
+    font-weight:600 !important;
+}
+[data-testid="stFormSubmitButton"] button:hover {background:#4338CA !important;}
+
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {background:#0F172A;}
 [data-testid="stSidebar"] * {color:#E2E8F0;}
