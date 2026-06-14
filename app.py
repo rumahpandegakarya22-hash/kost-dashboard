@@ -53,7 +53,10 @@ def build_authenticator():
 
 
 authenticator = build_authenticator()
-name, auth_status, username = authenticator.login("Masuk Dashboard", "main")
+authenticator.login(location='main', fields={'Form name': 'Masuk Dashboard'})
+name = st.session_state.get("name")
+auth_status = st.session_state.get("authentication_status")
+username = st.session_state.get("username")
 
 if auth_status is False:
     st.error("Username / password salah.")
@@ -146,7 +149,10 @@ if menu == "Executive":
     st.subheader("Okupansi per Jenis Kamar")
     p = D.penghuni()
     if not p.empty and "Jenis Kamar" in p.columns:
-        terisi = p[p.get("Status Okupansi", "").astype(str).str.contains("Terisi", na=False)]
+        if "Status Okupansi" in p.columns:
+            terisi = p[p["Status Okupansi"].astype(str).str.contains("Terisi", na=False)]
+        else:
+            terisi = p
         vc = D.value_counts(terisi, "Jenis Kamar")
         if not vc.empty:
             st.plotly_chart(bars(vc.index.tolist(), vc.values.tolist(), ac),
