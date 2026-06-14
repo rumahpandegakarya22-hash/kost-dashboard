@@ -26,7 +26,9 @@ st.markdown("""
 <style>
 /* ── Layout ── */
 .block-container {padding-top:1.5rem;padding-bottom:2rem;max-width:none;}
-[data-testid="stAppViewContainer"] > .main {background:#F1F5F9;}
+.stApp {background:#F1F5F9 !important;}
+[data-testid="stMain"] {background:#F1F5F9 !important;}
+section.main {background:#F1F5F9 !important;}
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {background:#0F172A;}

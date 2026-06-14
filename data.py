@@ -68,8 +68,9 @@ def read_tab(worksheet: str, key_col: str | None = None) -> pd.DataFrame:
     (sheet ini banyak baris filler kosong di bawah data).
     """
     try:
-        df = _conn().read(worksheet=worksheet, ttl="5m")
-    except Exception:
+        df = _conn().read(worksheet=worksheet)
+    except Exception as e:
+        st.warning(f"Gagal baca tab '{worksheet}': {e}")
         return pd.DataFrame()
     df = df.dropna(how="all")
     if key_col and key_col in df.columns:
@@ -85,7 +86,7 @@ def read_dashboard() -> dict:
     """
     out = {s: {} for s in SECTIONS}
     try:
-        raw = _conn().read(worksheet="10_DASHBOARD", ttl="5m", header=None)
+        raw = _conn().read(worksheet="10_DASHBOARD", header=None)
     except Exception:
         return out
 
