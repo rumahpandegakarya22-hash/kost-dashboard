@@ -198,18 +198,37 @@ def keuangan_trend(df=None) -> pd.DataFrame:
     """
     if df is None:
         df = read_tab("3_KEUANGAN", key_col="Tanggal")
-    if df.empty or "Bulan" not in df.columns:
+    if df.empty:
         return pd.DataFrame()
     df = df.copy()
+
+    # Normalisasi kolom bulan — bisa dari "Bulan" (datetime/string) atau "Tanggal"
+    if "Bulan" in df.columns:
+        bulan_dt = pd.to_datetime(df["Bulan"], errors='coerce', dayfirst=True)
+        if bulan_dt.notna().any():
+            df["_bulan"] = bulan_dt.dt.to_period("M").astype(str)
+        else:
+            df["_bulan"] = df["Bulan"].astype(str).str[:7]  # "2026-04"
+    elif "Tanggal" in df.columns:
+        tgl_dt = pd.to_datetime(df["Tanggal"], errors='coerce', dayfirst=True)
+        df["_bulan"] = tgl_dt.dt.to_period("M").astype(str)
+    else:
+        return pd.DataFrame()
+
     for c in ["Pendapatan Usaha", "Beban Usaha"]:
         if c in df.columns:
             df[c] = df[c].map(to_num)
         else:
             df[c] = 0.0
-    g = df.groupby("Bulan")[["Pendapatan Usaha", "Beban Usaha"]].sum().reset_index()
+
+    g = df.groupby("_bulan")[["Pendapatan Usaha", "Beban Usaha"]].sum().reset_index()
+    g = g.rename(columns={"_bulan": "Bulan"})
     g["Laba"]   = g["Pendapatan Usaha"] - g["Beban Usaha"]
-    g["RevPAR"] = g["Pendapatan Usaha"] / 29  # total kapasitas kamar
-    return g.sort_values("Bulan").reset_index(drop=True)
+    g["RevPAR"] = g["Pendapatan Usaha"] / 29
+
+    # Format label bulan jadi "Apr 2026" untuk tampilan sumbu X
+    g["Bulan"] = pd.to_datetime(g["Bulan"]).dt.strftime("%b %Y")
+    return g.reset_index(drop=True)
 
 
 def monthly_count(df: pd.DataFrame, date_col: str, label: str = "Count") -> pd.DataFrame:

@@ -202,15 +202,16 @@ def donut(labels, values, colors, center=""):
     fig = go.Figure(go.Pie(
         labels=labels, values=values, hole=.62,
         marker=dict(colors=colors), sort=False,
-        textinfo='label+percent', textfont=dict(size=11, color='#374151'),
-        insidetextorientation='auto'))
+        textinfo='percent',
+        textfont=dict(size=11, color='white'),
+        insidetextorientation='horizontal'))
     fig.update_layout(
-        height=260, margin=dict(t=10, b=10, l=10, r=10),
+        height=260, margin=dict(t=10, b=10, l=10, r=100),
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         annotations=[dict(text=center, showarrow=False,
                           font_size=16, font_color='#0F172A')],
         showlegend=True,
-        legend=dict(orientation='v', x=1.05, y=0.5,
+        legend=dict(orientation='v', x=1.02, y=0.5, xanchor='left',
                     font=dict(size=11, color='#374151'), bgcolor='rgba(0,0,0,0)'))
     return fig
 
