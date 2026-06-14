@@ -173,3 +173,74 @@ def maintenance() -> pd.DataFrame:
     if not b.empty:
         b["Jenis Perawatan"] = "Korektif"
     return pd.concat([a, b], ignore_index=True) if (not a.empty or not b.empty) else pd.DataFrame()
+
+
+# ── Utilitas filter tanggal & tren histori ─────────────────────────────────
+
+def filter_date(df: pd.DataFrame, date_col: str,
+                d_from=None, d_to=None) -> pd.DataFrame:
+    """Filter df berdasarkan rentang tanggal. Return salinan terfilter."""
+    if df.empty or date_col not in df.columns or (d_from is None and d_to is None):
+        return df
+    ts = pd.to_datetime(df[date_col], errors='coerce', dayfirst=True)
+    mask = pd.Series(True, index=df.index)
+    if d_from is not None:
+        mask &= ts >= pd.Timestamp(d_from)
+    if d_to is not None:
+        mask &= ts <= pd.Timestamp(d_to)
+    return df[mask].reset_index(drop=True)
+
+
+def keuangan_trend(df=None) -> pd.DataFrame:
+    """
+    Agregasi Pendapatan / Beban / Laba / RevPAR per bulan.
+    df: DataFrame 3_KEUANGAN yang sudah difilter, atau None untuk data penuh.
+    """
+    if df is None:
+        df = read_tab("3_KEUANGAN", key_col="Tanggal")
+    if df.empty or "Bulan" not in df.columns:
+        return pd.DataFrame()
+    df = df.copy()
+    for c in ["Pendapatan Usaha", "Beban Usaha"]:
+        if c in df.columns:
+            df[c] = df[c].map(to_num)
+        else:
+            df[c] = 0.0
+    g = df.groupby("Bulan")[["Pendapatan Usaha", "Beban Usaha"]].sum().reset_index()
+    g["Laba"]   = g["Pendapatan Usaha"] - g["Beban Usaha"]
+    g["RevPAR"] = g["Pendapatan Usaha"] / 29  # total kapasitas kamar
+    return g.sort_values("Bulan").reset_index(drop=True)
+
+
+def monthly_count(df: pd.DataFrame, date_col: str, label: str = "Count") -> pd.DataFrame:
+    """Hitung jumlah baris per bulan kalender."""
+    if df.empty or date_col not in df.columns:
+        return pd.DataFrame(columns=["Bulan", label])
+    d = df.copy()
+    d["_dt"] = pd.to_datetime(d[date_col], errors='coerce', dayfirst=True)
+    d = d.dropna(subset=["_dt"])
+    if d.empty:
+        return pd.DataFrame(columns=["Bulan", label])
+    d["Bulan"] = d["_dt"].dt.to_period("M").astype(str)
+    return (d.groupby("Bulan").size()
+              .reset_index(name=label)
+              .sort_values("Bulan")
+              .reset_index(drop=True))
+
+
+def monthly_sum(df: pd.DataFrame, date_col: str,
+                value_col: str, label: str = "Nilai") -> pd.DataFrame:
+    """Jumlahkan kolom numerik per bulan kalender."""
+    if df.empty or date_col not in df.columns or value_col not in df.columns:
+        return pd.DataFrame(columns=["Bulan", label])
+    d = df.copy()
+    d["_dt"] = pd.to_datetime(d[date_col], errors='coerce', dayfirst=True)
+    d = d.dropna(subset=["_dt"])
+    if d.empty:
+        return pd.DataFrame(columns=["Bulan", label])
+    d["Bulan"]   = d["_dt"].dt.to_period("M").astype(str)
+    d[value_col] = d[value_col].map(to_num)
+    return (d.groupby("Bulan")[value_col].sum()
+              .reset_index(name=label)
+              .sort_values("Bulan")
+              .reset_index(drop=True))
