@@ -66,7 +66,8 @@ section.main{background:#F1F5F9 !important;}
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label{
     padding:10px 12px !important;border-radius:10px !important;
     font-size:13px !important;color:#94A3B8 !important;
-    font-weight:500 !important;display:block;cursor:pointer;}
+    font-weight:500 !important;display:flex !important;
+    align-items:center !important;gap:8px !important;cursor:pointer;}
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked){
     background:#1E293B !important;color:#FFFFFF !important;
     border-left:3px solid #4F46E5 !important;font-weight:600 !important;}
@@ -78,35 +79,33 @@ section.main{background:#F1F5F9 !important;}
      padding:0 0 12px;margin-bottom:4px;overflow:hidden;}
 .kpi-strip{height:4px;border-radius:16px 16px 0 0;}
 .kpi-body{padding:14px 20px 0;}
-.kpi .lab{font-size:12px;color:#64748B;font-weight:500;margin-bottom:6px;}
+.kpi .lab{font-size:12px;color:#475569;font-weight:500;margin-bottom:6px;}
 .kpi .val{font-size:24px;color:#0F172A;font-weight:700;margin:0 0 4px;
           letter-spacing:-0.5px;line-height:1.1;}
-.kpi .sub{font-size:11px;color:#64748B;}
-.kpi .sub.pos{color:#16A34A;font-weight:600;}
+.kpi .sub{font-size:11px;color:#475569;}
+.kpi .sub.pos{color:#15803D;font-weight:600;}
 .kpi .sub.neg{color:#DC2626;font-weight:600;}
-.kpi .sub.warn{color:#D97706;font-weight:600;}
+.kpi .sub.warn{color:#92400E;font-weight:600;}
 
 .cht-hdr{background:white;border:1px solid #E8EDF3;border-radius:16px 16px 0 0;
          border-bottom:none;padding:14px 20px 10px;margin:0;
-         border-left-width:3px !important;border-left-style:solid !important;}
+         border-top-width:3px;border-top-style:solid;}
 .cht-hdr .cht-t{font-size:14px;font-weight:600;color:#0F172A;margin:0 0 2px;}
-.cht-hdr .cht-s{font-size:11px;color:#94A3B8;margin:0;}
+.cht-hdr .cht-s{font-size:11px;color:#64748B;margin:0;}
 
 .page-hdr{margin:0 0 24px;}
 .page-hdr h2{font-size:22px;font-weight:700;color:#0F172A;margin:0 0 4px;
              display:flex;align-items:center;gap:8px;}
-.page-hdr .page-sub{font-size:13px;color:#64748B;margin:0;}
+.page-hdr .page-sub{font-size:13px;color:#475569;margin:0;}
 .page-hdr .accent-bar{height:3px;width:48px;border-radius:99px;margin-top:10px;}
 
 .empty-state{background:white;border:1px solid #E8EDF3;border-radius:16px;
-             padding:40px 20px;text-align:center;color:#94A3B8;
+             padding:40px 20px;text-align:center;color:#64748B;
              font-size:13px;margin-bottom:16px;}
 .empty-state .es-icon{font-size:32px;margin-bottom:8px;}
 
-[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label{
-    display:flex !important;align-items:center !important;gap:8px !important;}
 
-.section-lbl{font-size:10px;font-weight:700;color:#475569;
+.section-lbl{font-size:10px;font-weight:700;color:#94A3B8;
              letter-spacing:.1em;margin:0 0 6px 4px;text-transform:uppercase;}
 
 [data-testid="stPlotlyChart"]{
@@ -195,7 +194,7 @@ def _delta(current_val, prev_val, good_if_up=True, fmt="pct"):
     pct   = delta / abs(prev_val) * 100
     up    = delta > 0
     good  = up if good_if_up else not up
-    color = "#16A34A" if good else "#DC2626"
+    color = "#15803D" if good else "#DC2626"
     arrow = "▲" if up else "▼"
     if fmt == "pp":
         txt = f"{arrow} {abs(delta * 100):.1f}pp vs sblm"
@@ -263,7 +262,7 @@ def kpi(col, label, value, sub="", sub_type="", delta_html="",
 def chart_header(title, subtitle="", accent=None):
     border_color = accent or "#E8EDF3"
     st.markdown(
-        f'<div class="cht-hdr" style="border-left-color:{border_color};">'
+        f'<div class="cht-hdr" style="border-top-color:{border_color};">'
         f'<p class="cht-t">{title}</p>'
         f'<p class="cht-s">{subtitle}</p></div>',
         unsafe_allow_html=True)
@@ -356,13 +355,13 @@ with st.sidebar:
                 box-shadow:0 4px 12px rgba(79,70,229,0.35);">K</div>
     <div>
       <div style="font-weight:700;font-size:16px;color:white;line-height:1.2;">KostPro</div>
-      <div style="font-size:10px;color:#475569;margin-top:1px;">Rumah Pandega</div>
+      <div style="font-size:10px;color:#94A3B8;margin-top:1px;">Rumah Pandega</div>
     </div>
   </div>
   <div style="margin-top:12px;padding:8px 12px;background:#1E293B;border-radius:10px;
               display:flex;justify-content:space-between;align-items:center;">
-    <div style="font-size:11px;color:#64748B;">📅 {now.strftime('%d %b %Y')}</div>
-    <div style="font-size:10px;color:#475569;">{now.strftime('%H:%M')}</div>
+    <div style="font-size:11px;color:#94A3B8;">📅 {now.strftime('%d %b %Y')}</div>
+    <div style="font-size:10px;color:#94A3B8;">{now.strftime('%H:%M')}</div>
   </div>
 </div>
 <p class="section-lbl">PERIODE</p>
@@ -408,7 +407,7 @@ with st.sidebar:
       {initials}</div>
     <div>
       <div style="font-size:12px;font-weight:600;color:white;line-height:1.3;">{name}</div>
-      <div style="font-size:10px;color:#64748B;">{MENU_ICON.get(menu,'')} {menu}</div>
+      <div style="font-size:10px;color:#94A3B8;">{MENU_ICON.get(menu,'')} {menu}</div>
     </div>
   </div>
 </div>
@@ -955,7 +954,7 @@ else:
 st.markdown("""
 <div style="margin-top:24px;padding:12px 16px;background:white;border:1px solid #E8EDF3;
             border-radius:12px;display:flex;align-items:center;justify-content:space-between;">
-  <span style="font-size:12px;color:#64748B;">🔒 Akses terbatas · Data live dari Google Sheets</span>
-  <span style="font-size:11px;color:#94A3B8;">Cache 5 menit</span>
+  <span style="font-size:12px;color:#475569;">🔒 Akses terbatas · Data live dari Google Sheets</span>
+  <span style="font-size:11px;color:#64748B;">Cache 5 menit</span>
 </div>
 """, unsafe_allow_html=True)

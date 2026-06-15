@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-15T00:00:00Z",
+  "title": "Design System: Dashboard Operasional Rumah Pandega",
+  "extensions": {
+    "colorMeta": {
+      "command-depth": {
+        "role": "primary",
+        "displayName": "Command Depth",
+        "canonical": "#0F172A",
+        "tonalRamp": ["#080d17", "#0F172A", "#172336", "#1E293B", "#334155", "#475569", "#94A3B8", "#CBD5E1"]
+      },
+      "slate-surface": {
+        "role": "primary",
+        "displayName": "Slate Surface",
+        "canonical": "#1E293B",
+        "tonalRamp": ["#0c1524", "#131d2e", "#1E293B", "#27374f", "#334155", "#4a5d7a", "#7a93b5", "#bdd0e8"]
+      },
+      "ghost-surface": {
+        "role": "neutral",
+        "displayName": "Ghost Surface",
+        "canonical": "#F1F5F9",
+        "tonalRamp": ["#CBD5E1", "#D1D9E2", "#DDE4ED", "#E2E8F0", "#E8EDF3", "#F1F5F9", "#F5F8FC", "#F8FAFC"]
+      },
+      "card-white": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["#E2E8F0", "#E8EDF3", "#F0F4F8", "#F4F7FA", "#F8FAFC", "#FAFCFE", "#FDFDFF", "#FFFFFF"]
+      },
+      "card-border": {
+        "role": "neutral",
+        "displayName": "Card Border",
+        "canonical": "#E8EDF3",
+        "tonalRamp": ["#CBD5E1", "#D1D9E2", "#DDE4ED", "#E2E8F0", "#E8EDF3", "#EDF1F7", "#F3F6FA", "#F8FAFC"]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "#64748B",
+        "tonalRamp": ["#1e293b", "#334155", "#475569", "#64748B", "#7a90aa", "#94A3B8", "#b5c4d5", "#d1dce8"]
+      },
+      "ink-tertiary": {
+        "role": "neutral",
+        "displayName": "Ink Tertiary",
+        "canonical": "#94A3B8",
+        "tonalRamp": ["#334155", "#475569", "#64748B", "#7a90aa", "#94A3B8", "#aab8c8", "#c0cedb", "#d5e0ea"]
+      },
+      "role-executive": {
+        "role": "secondary",
+        "displayName": "Executive Indigo",
+        "canonical": "#4F46E5",
+        "tonalRamp": ["#1e1a6e", "#2d289f", "#3e36c5", "#4F46E5", "#6b62eb", "#8f8af2", "#b3aff7", "#d7d5fb"]
+      },
+      "role-sales": {
+        "role": "secondary",
+        "displayName": "Sales Emerald",
+        "canonical": "#059669",
+        "tonalRamp": ["#023d2a", "#045c3e", "#047857", "#059669", "#10b981", "#34d399", "#6ee7b7", "#a7f3d0"]
+      },
+      "role-admin": {
+        "role": "secondary",
+        "displayName": "Admin Blue",
+        "canonical": "#2563EB",
+        "tonalRamp": ["#1a3b99", "#1d4ed8", "#1f59e0", "#2563EB", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe"]
+      },
+      "role-marketing": {
+        "role": "secondary",
+        "displayName": "Marketing Violet",
+        "canonical": "#7C3AED",
+        "tonalRamp": ["#3b1175", "#5521a8", "#6829cc", "#7C3AED", "#9a5bf5", "#b183f8", "#c4a8fa", "#ddd3fc"]
+      },
+      "role-ops": {
+        "role": "secondary",
+        "displayName": "Ops Orange",
+        "canonical": "#EA580C",
+        "tonalRamp": ["#6a2104", "#9a3506", "#c2430a", "#EA580C", "#f97316", "#fb923c", "#fdba74", "#fed7aa"]
+      },
+      "signal-success": {
+        "role": "tertiary",
+        "displayName": "Signal Success",
+        "canonical": "#16A34A",
+        "tonalRamp": ["#052b12", "#0a4820", "#0d6830", "#16A34A", "#22c55e", "#4ade80", "#86efac", "#bbf7d0"]
+      },
+      "signal-danger": {
+        "role": "tertiary",
+        "displayName": "Signal Danger",
+        "canonical": "#DC2626",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#DC2626", "#ef4444", "#f87171", "#fca5a5", "#fecaca"]
+      },
+      "signal-warning": {
+        "role": "tertiary",
+        "displayName": "Signal Warning",
+        "canonical": "#D97706",
+        "tonalRamp": ["#4a2605", "#7c3f09", "#a35208", "#D97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fde68a"]
+      },
+      "signal-caution": {
+        "role": "tertiary",
+        "displayName": "Signal Caution",
+        "canonical": "#F59E0B",
+        "tonalRamp": ["#6b3a05", "#92520b", "#c07d0f", "#F59E0B", "#fbbf24", "#fcd34d", "#fde68a", "#fef3c7"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "KPI Display", "purpose": "Metric values on KPI cards. The loudest typographic element on any data screen." },
+      "headline": { "displayName": "Page Headline", "purpose": "Section page titles (e.g. 'Ringkasan Eksekutif'). One per page." },
+      "title": { "displayName": "Section Title", "purpose": "Chart and sub-section headers. Paired with an Ink Tertiary subtitle line." },
+      "body": { "displayName": "Body", "purpose": "Sidebar nav labels, table content, general UI copy." },
+      "label": { "displayName": "Label", "purpose": "KPI card sub-labels, tag text, field labels." },
+      "micro": { "displayName": "Micro / Section Divider", "purpose": "Sidebar navigation section dividers only. Prohibited as eyebrow text on main content surface." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-state", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "State transitions: hover background, focus border, active nav state. Duration 150ms." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "KPI Card",
+      "kind": "card",
+      "refersTo": "kpi-card",
+      "description": "The primary data display unit. One metric, one color strip, one sparkline. Four per page row.",
+      "html": "<div class=\"ds-kpi-card\">\n  <div class=\"ds-kpi-strip\" style=\"background:#4F46E5;\"></div>\n  <div class=\"ds-kpi-body\">\n    <div class=\"ds-kpi-label\">Pendapatan Periode</div>\n    <div class=\"ds-kpi-value\">Rp 48,2 Jt</div>\n    <div class=\"ds-kpi-sub\">Beban Rp 21,5 Jt</div>\n    <div class=\"ds-kpi-delta\">▲ 12.4% vs sblm</div>\n  </div>\n</div>",
+      "css": ".ds-kpi-card { background: #FFFFFF; border: 1px solid #E8EDF3; border-radius: 16px; padding: 0 0 12px; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; } .ds-kpi-strip { height: 4px; border-radius: 16px 16px 0 0; } .ds-kpi-body { padding: 14px 20px 0; } .ds-kpi-label { font-size: 12px; color: #64748B; font-weight: 500; margin-bottom: 6px; } .ds-kpi-value { font-size: 24px; color: #0F172A; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; margin: 0 0 4px; } .ds-kpi-sub { font-size: 11px; color: #64748B; } .ds-kpi-sub.pos { color: #16A34A; font-weight: 600; } .ds-kpi-sub.neg { color: #DC2626; font-weight: 600; } .ds-kpi-sub.warn { color: #D97706; font-weight: 600; } .ds-kpi-delta { font-size: 10px; color: #16A34A; font-weight: 600; margin-top: 2px; } .ds-kpi-delta.neg { color: #DC2626; }"
+    },
+    {
+      "name": "Chart Header",
+      "kind": "card",
+      "refersTo": "kpi-card",
+      "description": "White header above every Plotly chart. Accent via border-top (not border-left — see The No-Stripe Rule).",
+      "html": "<div class=\"ds-chart-header ds-accent-executive\">\n  <p class=\"ds-chart-title\">Tren Pendapatan vs Biaya</p>\n  <p class=\"ds-chart-sub\">Bulanan · Rp Juta · 01 Jan – 15 Jun 2026</p>\n</div>",
+      "css": ".ds-chart-header { background: #FFFFFF; border: 1px solid #E8EDF3; border-radius: 16px 16px 0 0; border-bottom: none; padding: 14px 20px 10px; font-family: system-ui, -apple-system, sans-serif; } .ds-accent-executive { border-top: 3px solid #4F46E5; } .ds-accent-sales { border-top: 3px solid #059669; } .ds-accent-admin { border-top: 3px solid #2563EB; } .ds-accent-marketing { border-top: 3px solid #7C3AED; } .ds-accent-ops { border-top: 3px solid #EA580C; } .ds-chart-title { font-size: 14px; font-weight: 600; color: #0F172A; margin: 0 0 2px; } .ds-chart-sub { font-size: 11px; color: #94A3B8; margin: 0; }"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "sidebar-nav-item",
+      "description": "Dark navy sidebar. Five role nav items. Active state: Slate Surface background + role accent left-border (sole permitted content left-border).",
+      "html": "<nav class=\"ds-sidebar\">\n  <p class=\"ds-section-lbl\">NAVIGASI</p>\n  <a class=\"ds-nav-item\" href=\"#\">📊  Executive</a>\n  <a class=\"ds-nav-item ds-nav-active\" style=\"border-left-color:#059669\" href=\"#\">🎯  Sales</a>\n  <a class=\"ds-nav-item\" href=\"#\">🏠  Admin</a>\n  <a class=\"ds-nav-item\" href=\"#\">📣  Marketing</a>\n  <a class=\"ds-nav-item\" href=\"#\">🔧  Operasional</a>\n</nav>",
+      "css": ".ds-sidebar { background: #0F172A; padding: 8px; font-family: system-ui, -apple-system, sans-serif; border-radius: 8px; } .ds-section-lbl { font-size: 10px; font-weight: 700; color: #475569; letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 6px 4px; } .ds-nav-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; font-size: 13px; color: #94A3B8; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.15s, color 0.15s; border-left: 3px solid transparent; } .ds-nav-item:hover { background: #1E293B; color: #CBD5E1; } .ds-nav-active { background: #1E293B !important; color: #FFFFFF !important; font-weight: 600; }"
+    },
+    {
+      "name": "Page Header",
+      "kind": "custom",
+      "refersTo": "kpi-card",
+      "description": "Top-of-page section header. Role emoji + title + subtitle with period badge + 48px accent bar.",
+      "html": "<div class=\"ds-page-header\">\n  <h2 class=\"ds-page-title\"><span>📊</span> Ringkasan Eksekutif</h2>\n  <p class=\"ds-page-sub\">Kinerja portofolio kost · BOD / Owner · <span class=\"ds-period-badge\">📅 01 Jan – 15 Jun 2026</span></p>\n  <div class=\"ds-accent-bar\" style=\"background:#4F46E5;\"></div>\n</div>",
+      "css": ".ds-page-header { margin: 0 0 24px; font-family: system-ui, -apple-system, sans-serif; } .ds-page-title { font-size: 22px; font-weight: 700; color: #0F172A; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; } .ds-page-sub { font-size: 13px; color: #64748B; margin: 0; } .ds-accent-bar { height: 3px; width: 48px; border-radius: 99px; margin-top: 10px; } .ds-period-badge { display: inline-block; background: #F1F5F9; color: #475569; padding: 2px 10px; border-radius: 99px; font-size: 11px; border: 1px solid #E2E8F0; margin-left: 4px; vertical-align: middle; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Used only for form submit (login) and sidebar Refresh. Executive Indigo always, regardless of active role page.",
+      "html": "<button class=\"ds-btn-primary\">Masuk Dashboard</button>",
+      "css": ".ds-btn-primary { background: #4F46E5; color: #FFFFFF; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; padding: 10px 20px; cursor: pointer; transition: background 0.15s; font-family: system-ui, -apple-system, sans-serif; } .ds-btn-primary:hover { background: #4338CA; } .ds-btn-primary:focus-visible { outline: 2px solid #4F46E5; outline-offset: 2px; } .ds-btn-primary:active { background: #3730A3; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Login form and any future filter inputs. Focus ring uses Executive Indigo only.",
+      "html": "<div class=\"ds-input-group\">\n  <label class=\"ds-input-label\">Username</label>\n  <input class=\"ds-input-text\" type=\"text\" placeholder=\"Masukkan username\">\n</div>",
+      "css": ".ds-input-group { font-family: system-ui, -apple-system, sans-serif; } .ds-input-label { display: block; color: #374151; font-weight: 500; font-size: 13px; margin-bottom: 4px; } .ds-input-text { background: #F8FAFC; color: #0F172A; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; font-size: 14px; width: 100%; box-sizing: border-box; transition: border-color 0.15s; font-family: inherit; } .ds-input-text:focus { border-color: #4F46E5; outline: none; box-shadow: none; } .ds-input-text::placeholder { color: #94A3B8; }"
+    },
+    {
+      "name": "Empty State",
+      "kind": "card",
+      "refersTo": "empty-state",
+      "description": "Shown whenever a data section has zero records for the selected period. Matter-of-fact, not apologetic.",
+      "html": "<div class=\"ds-empty-state\">\n  <div class=\"ds-empty-icon\">📭</div>\n  <div class=\"ds-empty-text\">Belum ada data pada periode ini.</div>\n</div>",
+      "css": ".ds-empty-state { background: #FFFFFF; border: 1px solid #E8EDF3; border-radius: 16px; padding: 40px 20px; text-align: center; font-family: system-ui, -apple-system, sans-serif; } .ds-empty-icon { font-size: 32px; margin-bottom: 8px; } .ds-empty-text { color: #94A3B8; font-size: 13px; }"
+    },
+    {
+      "name": "Period Badge",
+      "kind": "chip",
+      "refersTo": "period-badge",
+      "description": "Inline pill showing the active date range. Always in page subtitle. Part of the data contract.",
+      "html": "<span class=\"ds-period-badge\">📅 01 Jan 2026 – 15 Jun 2026</span>",
+      "css": ".ds-period-badge { display: inline-block; background: #F1F5F9; color: #475569; padding: 2px 10px; border-radius: 99px; font-size: 11px; border: 1px solid #E2E8F0; font-family: system-ui, -apple-system, sans-serif; vertical-align: middle; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Control Room",
+    "overview": "This is a dual-register system. The left panel is the cockpit: pitch dark, authoritative, role-aware. The right surface is the working floor: cool, clean, every number given space to breathe. You know where you are in the hierarchy the instant the page loads — the contrast between sidebar and content is not a styling choice, it's a structural signal.\n\nFive roles operate this dashboard. Each has its own accent channel — indigo for Executive, emerald for Sales, blue for Admin, violet for Marketing, orange for Operasional — and that channel fires only as a signal: the top strip of a KPI card, the color of a chart line, the active state of a nav item. Everywhere else, the palette holds discipline. Rarity is what makes the signal meaningful.\n\nThe system rejects two failure modes: the korporat kaku aesthetic of legacy BI tools (heavy chrome, gray gradients, zero personality) and the generic SaaS template (off-the-shelf card grid, tracked eyebrow above every section, indistinguishable from any other dashboard). This dashboard was built for one team, for one business. It should feel exactly that way.",
+    "keyCharacteristics": [
+      "Dark command sidebar (Slate Cockpit #0F172A) anchors every screen",
+      "Cool neutral working surface (Ghost Surface #F1F5F9) with white card elevation",
+      "Five role-specific accent channels; cross-contamination prohibited",
+      "Flat depth model: background tonal steps replace shadows entirely",
+      "KPI value (24px/700) is the loudest typographic element on any screen",
+      "System font only; no decorative type choices"
+    ],
+    "rules": [
+      { "name": "The Signal Rule", "body": "Role accent colors appear in exactly three contexts: (1) the 4px top strip of KPI cards, (2) chart line/bar/fill colors, (3) the left-border active indicator in sidebar navigation. Nowhere else.", "section": "colors" },
+      { "name": "The Five-Channel Rule", "body": "Cross-contamination between role channels is prohibited. The accent the eye sees tells the user which context they're in — mixing channels destroys that signal.", "section": "colors" },
+      { "name": "The Flat-By-Default Rule", "body": "Shadows are prohibited at all states. Depth is expressed through background tonal steps and 1px borders only.", "section": "elevation" },
+      { "name": "The Number-First Rule", "body": "The KPI Display value (24px/700) is the loudest element on any data screen. Nothing competes with it.", "section": "typography" },
+      { "name": "The Micro-Only Rule", "body": "Uppercase tracked type (Micro style) is permitted only as sidebar navigation section dividers. Prohibited as eyebrow/kicker text above any main-surface content section.", "section": "typography" },
+      { "name": "The No-Stripe Rule", "body": "border-left or border-right greater than 1px as a colored accent is prohibited on content containers. The sidebar nav active left-border is the sole exception.", "section": "components" }
+    ],
+    "dos": [
+      "Do use role accent colors exclusively for KPI card top strips, chart lines/fills, and sidebar nav active indicators on that role's page.",
+      "Do maintain the three-layer depth hierarchy: Command Depth sidebar → Ghost Surface main → Card White cards.",
+      "Do make KPI display values (24px/700) the loudest element on every data screen.",
+      "Do use border-top (not border-left) on chart headers when an accent indicator is needed.",
+      "Do use the period badge consistently in every page subtitle.",
+      "Do maintain WCAG AA contrast (4.5:1) for all body text, labels, and placeholder text.",
+      "Do use empty state components whenever a data section has zero records."
+    ],
+    "donts": [
+      "Don't use border-left or border-right greater than 1px as a colored accent on any content card, chart header, callout, or data row.",
+      "Don't feel like SAP or Oracle — no heavy gray gradients, no multi-level chrome, no enterprise-gray color schemes.",
+      "Don't feel like a generic SaaS template — no identical icon+heading+text card grid, no uppercase tracked eyebrow above content sections.",
+      "Don't use role accent colors as full card backgrounds or section backgrounds in the main content area.",
+      "Don't introduce box-shadows.",
+      "Don't add gradient text (background-clip: text). Display values are solid #0F172A.",
+      "Don't mix role accent channels between pages.",
+      "Don't use Micro style as eyebrow/kicker text above any main-surface content section.",
+      "Don't add glassmorphism, hero-metric templates, or identical card grids."
+    ]
+  }
+}
