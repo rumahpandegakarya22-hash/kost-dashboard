@@ -3,8 +3,9 @@ app.py — Dashboard Rumah Pandega (Streamlit).
 Semua nilai KPI dihitung langsung dari data mentah per sheet.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 import streamlit_authenticator as stauth
@@ -131,6 +132,43 @@ def _months_ago_start(n: int) -> date:
     return date(y, m, 1)
 
 
+def _prev_period(d_from, d_to):
+    """Hitung periode sebelumnya dengan rentang yang sama."""
+    if d_from is None or d_to is None:
+        return None, None
+    span     = (d_to - d_from).days + 1
+    prev_to  = d_from - timedelta(days=1)
+    prev_from = prev_to - timedelta(days=span - 1)
+    return prev_from, prev_to
+
+
+def _delta(current_val, prev_val, good_if_up=True, fmt="pct"):
+    """
+    Format badge perbandingan periode.
+    Returns HTML string, atau '' jika tidak ada data pembanding.
+    fmt: 'pct'=persentase perubahan, 'pp'=poin persentase, 'count'=selisih angka.
+    """
+    if prev_val is None or current_val is None:
+        return ""
+    if prev_val == 0:
+        return ""
+    delta = current_val - prev_val
+    if delta == 0:
+        return ""
+    pct   = delta / abs(prev_val) * 100
+    up    = delta > 0
+    good  = up if good_if_up else not up
+    color = "#16A34A" if good else "#DC2626"
+    arrow = "▲" if up else "▼"
+    if fmt == "pp":
+        txt = f"{arrow} {abs(delta * 100):.1f}pp vs sblm"
+    elif fmt == "count":
+        txt = f"{arrow} {int(abs(delta))} vs sblm"
+    else:
+        txt = f"{arrow} {abs(pct):.1f}% vs sblm"
+    return f'<div style="font-size:10px;color:{color};font-weight:600;margin-top:2px;">{txt}</div>'
+
+
 def _svg_spark(vals: list, color: str, h: int = 36) -> str:
     """SVG sparkline halus dengan aproksimasi Catmull-Rom Bézier."""
     if not vals or len(vals) < 2:
@@ -165,7 +203,8 @@ def _svg_spark(vals: list, color: str, h: int = 36) -> str:
     )
 
 
-def kpi(col, label, value, sub="", sub_type="", spark_y=None, spark_color=None):
+def kpi(col, label, value, sub="", sub_type="", delta_html="",
+        spark_y=None, spark_color=None):
     sub_class  = f"sub {sub_type}".strip()
     spark_html = _svg_spark(spark_y, spark_color or "#4F46E5") \
                  if spark_y and len(spark_y) >= 2 else ""
@@ -174,6 +213,7 @@ def kpi(col, label, value, sub="", sub_type="", spark_y=None, spark_color=None):
         f'<div class="lab">{label}</div>'
         f'<div class="val">{value}</div>'
         f'<div class="{sub_class}">{sub}</div>'
+        f'{delta_html}'
         f'{spark_html}</div>',
         unsafe_allow_html=True)
 
@@ -312,6 +352,9 @@ with st.sidebar:
 
 ac = ACCENT[menu]
 
+# Hitung periode sebelumnya (digunakan di semua halaman)
+pf, pt = _prev_period(d_from, d_to)
+
 
 # ════════════════════════════ EXECUTIVE ════════════════════════════════════════
 if menu == "Executive":
@@ -322,11 +365,16 @@ if menu == "Executive":
                 f'<span class="period-badge">{pbadge}</span></p>', unsafe_allow_html=True)
 
     p      = D.penghuni()
-    keu_df = D.filter_date(D.read_tab("3_KEUANGAN", "Tanggal"), "Tanggal", d_from, d_to)
-    kt     = D.keuangan_trend(keu_df)
-    e      = D.kpi_executive(keu_df, p)
+    keu_raw = D.read_tab("3_KEUANGAN", "Tanggal")
+    keu_df  = D.filter_date(keu_raw, "Tanggal", d_from, d_to)
+    kt      = D.keuangan_trend(keu_df)
+    e       = D.kpi_executive(keu_df, p)
 
-    # Sparklines dari tren bulanan
+    # Periode sebelumnya
+    keu_prev = D.filter_date(keu_raw, "Tanggal", pf, pt) if pf else pd.DataFrame()
+    e_prev   = D.kpi_executive(keu_prev, p) if not keu_prev.empty else None
+
+    # Sparklines
     rev_spark    = kt["Pendapatan Usaha"].tolist() if not kt.empty else []
     laba_spark   = kt["Laba"].tolist()             if not kt.empty else []
     revpar_spark = kt["RevPAR"].tolist()            if not kt.empty else []
@@ -336,18 +384,23 @@ if menu == "Executive":
     kpi(c1, "Pendapatan Periode",
         D.rupiah(e["pendapatan"], juta=True),
         f"Beban {D.rupiah(e['beban'], juta=True)}",
+        delta_html=_delta(e["pendapatan"], e_prev["pendapatan"] if e_prev else None),
         spark_y=rev_spark, spark_color=ac)
     kpi(c2, "Tingkat Hunian",
         D.persen(e["occ_komitmen"]),
-        f"Fisik {D.persen(e['occ_fisik'])}", "pos")
+        f"Fisik {D.persen(e['occ_fisik'])}", "pos",
+        delta_html=_delta(e["occ_komitmen"],
+                          e_prev["occ_komitmen"] if e_prev else None, fmt="pp"))
     kpi(c3, "Laba / Margin Usaha",
         D.rupiah(e["laba"], juta=True),
         f"Margin {D.persen(e['margin'])}",
         "pos" if e["laba"] >= 0 else "neg",
+        delta_html=_delta(e["laba"], e_prev["laba"] if e_prev else None),
         spark_y=laba_spark, spark_color=laba_color)
     kpi(c4, "RevPAR",
         D.rupiah(e["revpar"]),
         f"Penghuni aktif: {e['penghuni_aktif']}",
+        delta_html=_delta(e["revpar"], e_prev["revpar"] if e_prev else None),
         spark_y=revpar_spark, spark_color=ac)
 
     st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
@@ -438,52 +491,58 @@ elif menu == "Sales":
                 f'Akuisisi penyewa & pipeline '
                 f'<span class="period-badge">{pbadge}</span></p>', unsafe_allow_html=True)
 
-    # Raw data (filtered per periode)
     lead_raw = D.read_tab("6_LEADS", "Nama Leads")
     sv_raw   = D.read_tab("7_SURVEY", "Nama Calon")
     bk_raw   = D.read_tab("8_BOOKING", "No Booking")
 
-    # Cari kolom tanggal di survey (defensif)
     sv_date_col = next((c for c in ["Tgl Survey", "Tanggal", "Tgl"]
                         if not sv_raw.empty and c in sv_raw.columns), None)
 
     lead_df = D.filter_date(lead_raw, "Tanggal",     d_from, d_to)
     sv_df   = D.filter_date(sv_raw,   sv_date_col,   d_from, d_to) if sv_date_col else sv_raw
     bk_df   = D.filter_date(bk_raw,   "Tgl Booking", d_from, d_to)
+    s       = D.kpi_sales(lead_df, sv_df, bk_df)
 
-    s = D.kpi_sales(lead_df, sv_df, bk_df)
+    # Periode sebelumnya
+    lead_pf = D.filter_date(lead_raw, "Tanggal",     pf, pt) if pf else pd.DataFrame()
+    sv_pf   = D.filter_date(sv_raw,   sv_date_col,   pf, pt) if (pf and sv_date_col) else pd.DataFrame()
+    bk_pf   = D.filter_date(bk_raw,   "Tgl Booking", pf, pt) if pf else pd.DataFrame()
+    s_prev  = D.kpi_sales(lead_pf, sv_pf, bk_pf) if pf else None
 
-    # Sparkline leads bulanan
     lead_mc    = D.monthly_count(lead_df, "Tanggal", "Leads")
     lead_spark = lead_mc["Leads"].tolist() if not lead_mc.empty else []
 
     c1, c2, c3, c4 = st.columns(4)
     kpi(c1, "Total Leads", str(s["total_leads"]),
         f"Belum di-FU: {s['belum_fu']}", "warn",
+        delta_html=_delta(s["total_leads"],
+                          s_prev["total_leads"] if s_prev else None, fmt="count"),
         spark_y=lead_spark, spark_color=ac)
     kpi(c2, "Konversi Lead→Survey",
-        D.persen(s["conv_lead_survey"]), "", "pos")
+        D.persen(s["conv_lead_survey"]), "", "pos",
+        delta_html=_delta(s["conv_lead_survey"],
+                          s_prev["conv_lead_survey"] if s_prev else None, fmt="pp"))
     kpi(c3, "Konversi Survey→Deal",
-        D.persen(s["conv_survey_deal"]), "", "pos")
+        D.persen(s["conv_survey_deal"]), "", "pos",
+        delta_html=_delta(s["conv_survey_deal"],
+                          s_prev["conv_survey_deal"] if s_prev else None, fmt="pp"))
     kpi(c4, "Nilai Kontrak Deal",
         D.rupiah(s["nilai_deal"], juta=True),
         f"Cancel rate {D.persen(s['cancel_rate'])}",
-        "neg" if s["cancel_rate"] > 0 else "pos")
+        "neg" if s["cancel_rate"] > 0 else "pos",
+        delta_html=_delta(s["nilai_deal"],
+                          s_prev["nilai_deal"] if s_prev else None))
 
     st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
     g1, g2 = st.columns(2)
     with g1:
         chart_header("Funnel Penjualan", f"Lead → Survey → Booking → Deal · {pbadge}")
-        # Gunakan data terfilter untuk funnel
-        n_leads   = len(lead_df)
-        n_survey  = len(sv_df)
-        n_booking = s["total_leads"] - s.get("belum_fu", 0)  # fallback
-        # Hitung ulang dari bk_df langsung
-        n_bk = 0
-        n_deal = 0
+        n_leads  = len(lead_df)
+        n_survey = len(sv_df)
+        n_bk = n_deal = 0
         if not bk_df.empty and "Status" in bk_df.columns:
-            st_c = bk_df["Status"].astype(str).str.strip()
+            st_c   = bk_df["Status"].astype(str).str.strip()
             n_bk   = int((~st_c.str.contains("Batal", case=False, na=False)).sum())
             n_deal = int(st_c.str.contains("Check-in|Konfirmasi", case=False, na=False).sum())
         fn = [("Leads", n_leads), ("Survey", n_survey), ("Booking", n_bk), ("Deal", n_deal)]
@@ -543,9 +602,13 @@ elif menu == "Admin":
                 f'Penagihan, kontrak & hunian '
                 f'<span class="period-badge">{pbadge}</span></p>', unsafe_allow_html=True)
 
-    p        = D.penghuni()
-    a        = D.kpi_admin(p)
-    keu_df   = D.filter_date(D.read_tab("3_KEUANGAN", "Tanggal"), "Tanggal", d_from, d_to)
+    # p_full = semua penghuni (current-state); p_filt = filter by Tgl Jatuh Tempo
+    p_full   = D.penghuni()
+    p_filt   = D.filter_date(p_full, "Tgl Jatuh Tempo", d_from, d_to)
+    a        = D.kpi_admin(p_filt, all_penghuni_df=p_full)
+
+    keu_raw  = D.read_tab("3_KEUANGAN", "Tanggal")
+    keu_df   = D.filter_date(keu_raw, "Tanggal", d_from, d_to)
     kt_admin = D.keuangan_trend(keu_df)
 
     c1, c2, c3, c4 = st.columns(4)
@@ -563,7 +626,7 @@ elif menu == "Admin":
     g1, g2 = st.columns(2)
     with g1:
         chart_header("Status Tagihan", "Distribusi flag penagihan")
-        vc = D.value_counts(p, "Flag Tagih")
+        vc = D.value_counts(p_full, "Flag Tagih")
         if not vc.empty:
             FCOL = {"Aman": "#16A34A", "<30 hari": "#F59E0B",
                     "SEGERA": "#D97706", "LEWAT": "#DC2626"}
@@ -575,7 +638,7 @@ elif menu == "Admin":
 
     with g2:
         chart_header("Status Hunian", "Terisi vs Kosong")
-        vc = D.value_counts(p, "Status Okupansi")
+        vc = D.value_counts(p_full, "Status Okupansi")
         if not vc.empty:
             OCOL = {"Terisi": "#16A34A", "Kosong": "#94A3B8"}
             st.plotly_chart(donut(vc.index.tolist(), vc.values.tolist(),
@@ -604,12 +667,12 @@ elif menu == "Admin":
 
     st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
     chart_header("Prioritas Penagihan", "Penghuni mendekati / melewati jatuh tempo")
-    if not p.empty and "Flag Tagih" in p.columns:
-        prioritas = p[p["Flag Tagih"].astype(str).str.contains("SEGERA|LEWAT|<30", na=False)]
+    if not p_full.empty and "Flag Tagih" in p_full.columns:
+        prioritas = p_full[p_full["Flag Tagih"].astype(str).str.contains("SEGERA|LEWAT|<30", na=False)]
         cols = [c for c in ["No Kamar", "Nama Lengkap", "Panggilan", "Tgl Jatuh Tempo",
                              "Sisa Hari", "Flag Tagih", "Tarif Sewa",
-                             "Kontak Darurat"] if c in p.columns]
-        st.dataframe((prioritas if not prioritas.empty else p)[cols],
+                             "Kontak Darurat"] if c in p_full.columns]
+        st.dataframe((prioritas if not prioritas.empty else p_full)[cols],
                      use_container_width=True, hide_index=True,
                      column_config={
                          "Tarif Sewa": st.column_config.NumberColumn("Tarif Sewa (Rp)", format="Rp %d"),
@@ -635,26 +698,38 @@ elif menu == "Marketing":
     kon_df  = D.filter_date(kon_full,  "Tgl Post",    d_from, d_to)
     lead_df = D.filter_date(lead_raw,  "Tanggal",     d_from, d_to)
     bk_df   = D.filter_date(bk_raw,   "Tgl Booking", d_from, d_to)
+    m       = D.kpi_marketing(kon_df, pr_full, lead_df, bk_df)
 
-    m = D.kpi_marketing(kon_df, pr_full, lead_df, bk_df)
+    # Periode sebelumnya
+    kon_pf  = D.filter_date(kon_full, "Tgl Post",    pf, pt) if pf else pd.DataFrame()
+    lead_pf = D.filter_date(lead_raw, "Tanggal",     pf, pt) if pf else pd.DataFrame()
+    bk_pf   = D.filter_date(bk_raw,  "Tgl Booking", pf, pt) if pf else pd.DataFrame()
+    m_prev  = D.kpi_marketing(kon_pf, pr_full, lead_pf, bk_pf) if pf else None
 
-    reach_ms   = D.monthly_sum(kon_df if not kon_df.empty else kon_full,
-                               "Tgl Post", "Reach", "Reach")
+    reach_ms    = D.monthly_sum(kon_df if not kon_df.empty else kon_full,
+                                "Tgl Post", "Reach", "Reach")
     reach_spark = reach_ms["Reach"].tolist() if not reach_ms.empty else []
-
-    reach_str = f"{m['total_reach']:,}".replace(",", ".")
-    eng_str   = f"{m['total_engagement']:,}".replace(",", ".")
+    reach_str   = f"{m['total_reach']:,}".replace(",", ".")
+    eng_str     = f"{m['total_engagement']:,}".replace(",", ".")
 
     c1, c2, c3, c4 = st.columns(4)
     kpi(c1, "Total Reach", reach_str, f"Engagement {eng_str}",
+        delta_html=_delta(m["total_reach"],
+                          m_prev["total_reach"] if m_prev else None, fmt="count"),
         spark_y=reach_spark, spark_color=ac)
-    kpi(c2, "Avg Engagement Rate", D.persen(m["avg_er"]), "", "pos")
+    kpi(c2, "Avg Engagement Rate", D.persen(m["avg_er"]), "", "pos",
+        delta_html=_delta(m["avg_er"],
+                          m_prev["avg_er"] if m_prev else None, fmt="pp"))
     kpi(c3, "Avg CPL",
         D.rupiah(m["avg_cpl"]),
-        f"Total spend {D.rupiah(m['total_spend'], juta=True)}")
+        f"Total spend {D.rupiah(m['total_spend'], juta=True)}",
+        delta_html=_delta(m["avg_cpl"],
+                          m_prev["avg_cpl"] if m_prev else None, good_if_up=False))
     kpi(c4, "Konversi Lead→Booking",
         D.persen(m["conv_lead_booking"]),
-        f"Konten belum tayang: {m['belum_tayang']}", "warn")
+        f"Konten belum tayang: {m['belum_tayang']}", "warn",
+        delta_html=_delta(m["conv_lead_booking"],
+                          m_prev["conv_lead_booking"] if m_prev else None, fmt="pp"))
 
     st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
@@ -721,10 +796,14 @@ else:
                 f'Teknisi, perawatan & SLA · Tim Lapangan '
                 f'<span class="period-badge">{pbadge}</span></p>', unsafe_allow_html=True)
 
-    mt_full  = D.maintenance()
-    mt_df    = D.filter_date(mt_full, "Tgl Lapor/Jadwal", d_from, d_to)
-    mt_use   = mt_df if not mt_df.empty else mt_full
-    o        = D.kpi_operasional(mt_use)
+    mt_full = D.maintenance()
+    mt_df   = D.filter_date(mt_full, "Tgl Lapor/Jadwal", d_from, d_to)
+    mt_use  = mt_df if not mt_df.empty else mt_full
+    o       = D.kpi_operasional(mt_use)
+
+    # Periode sebelumnya
+    mt_pf  = D.filter_date(mt_full, "Tgl Lapor/Jadwal", pf, pt) if pf else pd.DataFrame()
+    o_prev = D.kpi_operasional(mt_pf) if (pf and not mt_pf.empty) else None
 
     tk_mc        = D.monthly_count(mt_use, "Tgl Lapor/Jadwal", "Tiket")
     biaya_ms     = D.monthly_sum(mt_use, "Tgl Lapor/Jadwal", "Biaya", "Biaya")
@@ -735,16 +814,26 @@ else:
     kpi(c1, "Total Tiket",
         str(o["total_tiket"]),
         f"Selesai: {o['selesai']}",
+        delta_html=_delta(o["total_tiket"],
+                          o_prev["total_tiket"] if o_prev else None,
+                          good_if_up=False, fmt="count"),
         spark_y=ticket_spark, spark_color=ac)
     kpi(c2, "Breach SLA",
         str(o["breach_sla"]),
         "Ada pelanggaran SLA!" if o["breach_sla"] > 0 else "Semua dalam SLA",
-        "neg" if o["breach_sla"] > 0 else "pos")
+        "neg" if o["breach_sla"] > 0 else "pos",
+        delta_html=_delta(o["breach_sla"],
+                          o_prev["breach_sla"] if o_prev else None,
+                          good_if_up=False, fmt="count"))
     kpi(c3, "MTTR",
-        f"{o['mttr']} hari", "Mean Time to Resolve")
+        f"{o['mttr']} hari", "Mean Time to Resolve",
+        delta_html=_delta(o["mttr"],
+                          o_prev["mttr"] if o_prev else None, good_if_up=False))
     kpi(c4, "Biaya Maintenance",
         D.rupiah(o["biaya"]),
         f"Prev:Korektif = {o['rasio']}",
+        delta_html=_delta(o["biaya"],
+                          o_prev["biaya"] if o_prev else None, good_if_up=False),
         spark_y=biaya_spark, spark_color=ac)
 
     st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)

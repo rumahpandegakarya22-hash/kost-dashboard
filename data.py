@@ -2,10 +2,9 @@
 data.py — Lapisan data dashboard Rumah Pandega.
 
 Tugas file ini:
-1. Buka koneksi ke Google Sheets `Rumah_Pandega_LIVE_v2` lewat service account
-   (kredensial disimpan di .streamlit/secrets.toml -> backend, tidak pernah ke browser).
-2. Baca tab mentah (2_PENGHUNI, 3_KEUANGAN, dst) untuk chart & tabel.
-3. Baca + parse tab ringkasan `10_DASHBOARD` (auto-connect) untuk angka KPI.
+1. Koneksi ke Google Sheets lewat service account.
+2. Baca tab mentah (2_PENGHUNI, 3_KEUANGAN, 3_DAFTAR_AKUN, dst) untuk chart & tabel.
+3. Hitung semua KPI dari data mentah — tidak dari tab pre-summarized.
 
 Semua hasil di-cache 5 menit (ttl) supaya cepat & hemat kuota API.
 """
@@ -15,23 +14,18 @@ import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
-# Nama section pada tab 10_DASHBOARD
-SECTIONS = ["EXECUTIVE", "SALES", "MARKETING", "ADMIN", "OPERASIONAL"]
 
-
-# ----------------------------------------------------------------------
-# Util angka
-# ----------------------------------------------------------------------
+# ── Util angka ───────────────────────────────────────────────────────────────
 def to_num(x):
-    """Ubah 'Rp1,800,000' / '0.95' / '' menjadi float. Gagal -> 0.0"""
+    """Ubah 'Rp1,800,000' / '0.95' / '' / '-' menjadi float. Gagal -> 0.0"""
     if x is None:
         return 0.0
     if isinstance(x, (int, float)):
         return float(x)
     s = str(x).strip()
-    if s == "" or s.lower() == "nan":
+    if s in ("", "-", "nan"):
         return 0.0
-    s = re.sub(r"[Rr]p", "", s)
+    s = re.sub(r"[Rr]p\s*", "", s)
     s = s.replace(",", "").replace("%", "").strip()
     try:
         return float(s)
@@ -54,9 +48,7 @@ def persen(x):
     return f"{v:,.1f}%".replace(",", ".")
 
 
-# ----------------------------------------------------------------------
-# Koneksi
-# ----------------------------------------------------------------------
+# ── Koneksi ──────────────────────────────────────────────────────────────────
 def _conn():
     return st.connection("gsheets", type=GSheetsConnection)
 
@@ -85,57 +77,61 @@ def read_tab(worksheet: str, key_col: str | None = None) -> pd.DataFrame:
     return df
 
 
-@st.cache_data(ttl="5m", show_spinner=False)
-def _read_dashboard_cached() -> tuple:
-    """Internal cached layer — returns (dict, error_str|None)."""
-    out = {s: {} for s in SECTIONS}
-    try:
-        raw = _conn().read(worksheet="10_DASHBOARD", header=None)
-    except Exception as e:
-        return out, str(e)
-
-    current = None
-    for _, row in raw.iterrows():
-        cells = [str(c).strip() for c in row.tolist() if str(c).strip() not in ("", "nan")]
-        if not cells:
-            continue
-        first = cells[0].upper()
-        if first in SECTIONS:
-            current = first
-            if len(cells) >= 3:
-                out[current][cells[1]] = cells[2]
-            continue
-        if current and len(cells) >= 2:
-            out[current][cells[0]] = cells[1]
-    return out, None
+# ── Akun (Chart of Accounts) ─────────────────────────────────────────────────
+_PENDAPATAN_TIPE = {"Pendapatan"}
+_BEBAN_TIPE      = {"Beban", "Beban Non-Operasional"}
 
 
-def read_dashboard() -> dict:
+def _akun_map() -> dict:
+    """Return {Nama Akun: Tipe Akun} dari 3_DAFTAR_AKUN."""
+    df = read_tab("3_DAFTAR_AKUN")
+    if df.empty or "Nama Akun" not in df.columns or "Tipe Akun" not in df.columns:
+        return {}
+    return df.set_index("Nama Akun")["Tipe Akun"].to_dict()
+
+
+def _compute_keuangan(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Parse tab 10_DASHBOARD. Warning ditampilkan di luar cache.
+    Dari df transaksi double-entry (3_KEUANGAN baru), tambah kolom:
+    - _pendapatan : Nominal jika Akun Kredit = akun Pendapatan (4xxx)
+    - _beban      : Nominal jika Akun Debit  = akun Beban (5xxx / 6xxx)
+
+    Fallback: jika 3_DAFTAR_AKUN kosong/tidak ada, pakai kolom 'Dampak Laba'
+    (positif = pendapatan; beban tidak terdeteksi).
     """
-    d, err = _read_dashboard_cached()
-    if err:
-        st.warning(f"❌ Gagal baca tab **'10_DASHBOARD'**: {err}")
+    if df.empty:
+        return df
+
+    akun = _akun_map()
+    d    = df.copy()
+    d["Nominal"] = (d["Nominal"].map(to_num)
+                    if "Nominal" in d.columns
+                    else pd.Series(0.0, index=d.index))
+
+    if akun:
+        kredit_tipe = (d["Akun Kredit"].astype(str).str.strip()
+                       .map(lambda x: akun.get(x, ""))
+                       if "Akun Kredit" in d.columns
+                       else pd.Series("", index=d.index))
+        debit_tipe  = (d["Akun Debit"].astype(str).str.strip()
+                       .map(lambda x: akun.get(x, ""))
+                       if "Akun Debit" in d.columns
+                       else pd.Series("", index=d.index))
+        d["_pendapatan"] = d["Nominal"].where(kredit_tipe.isin(_PENDAPATAN_TIPE), 0.0)
+        d["_beban"]      = d["Nominal"].where(debit_tipe.isin(_BEBAN_TIPE),       0.0)
+    elif "Dampak Laba" in d.columns:
+        # Fallback — kolom Dampak Laba: positif = pendapatan
+        dampak = d["Dampak Laba"].map(to_num)
+        d["_pendapatan"] = dampak.where(dampak > 0, 0.0)
+        d["_beban"]      = (-dampak).where(dampak < 0, 0.0)
+    else:
+        d["_pendapatan"] = 0.0
+        d["_beban"]      = 0.0
+
     return d
 
 
-# ----------------------------------------------------------------------
-# Helper agregasi untuk chart (defensif: aman jika kolom/tab tak ada)
-# ----------------------------------------------------------------------
-def keuangan_per_bulan() -> pd.DataFrame:
-    df = read_tab("3_KEUANGAN", key_col="Tanggal")
-    if df.empty or "Bulan" not in df.columns:
-        return pd.DataFrame()
-    for c in ["Pendapatan Usaha", "Beban Usaha"]:
-        if c in df.columns:
-            df[c] = df[c].map(to_num)
-        else:
-            df[c] = 0.0
-    g = df.groupby("Bulan")[["Pendapatan Usaha", "Beban Usaha"]].sum().reset_index()
-    return g.sort_values("Bulan")
-
-
+# ── Helper agregasi ──────────────────────────────────────────────────────────
 def penghuni() -> pd.DataFrame:
     return read_tab("2_PENGHUNI", key_col="ID")
 
@@ -147,13 +143,13 @@ def value_counts(df: pd.DataFrame, col: str) -> pd.Series:
 
 
 def funnel_sales() -> list[tuple[str, int]]:
-    leads = len(read_tab("6_LEADS", key_col="Nama Leads"))
-    survey = len(read_tab("7_SURVEY", key_col="Nama Calon"))
-    bk = read_tab("8_BOOKING", key_col="No Booking")
+    leads   = len(read_tab("6_LEADS", key_col="Nama Leads"))
+    survey  = len(read_tab("7_SURVEY", key_col="Nama Calon"))
+    bk      = read_tab("8_BOOKING", key_col="No Booking")
     booking = 0 if bk.empty else int((~bk.get("Status", pd.Series()).astype(str)
                                       .str.contains("Batal", case=False, na=False)).sum())
-    deal = 0 if bk.empty else int(bk.get("Status", pd.Series()).astype(str)
-                                  .str.contains("Check-in|Konfirmasi", case=False, na=False).sum())
+    deal    = 0 if bk.empty else int(bk.get("Status", pd.Series()).astype(str)
+                                     .str.contains("Check-in|Konfirmasi", case=False, na=False).sum())
     return [("Leads", leads), ("Survey", survey), ("Booking", booking), ("Deal", deal)]
 
 
@@ -169,20 +165,19 @@ def maintenance() -> pd.DataFrame:
     a = read_tab("9_PREVENTIVE MAINTENANCE", key_col="Lokasi/Item")
     b = read_tab("10_CORRECTIVE MAINTENANCE", key_col="Lokasi/Item")
     if not a.empty:
-        a["Jenis Perawatan"] = "Preventif"
+        a = a.copy(); a["Jenis Perawatan"] = "Preventif"
     if not b.empty:
-        b["Jenis Perawatan"] = "Korektif"
+        b = b.copy(); b["Jenis Perawatan"] = "Korektif"
     return pd.concat([a, b], ignore_index=True) if (not a.empty or not b.empty) else pd.DataFrame()
 
 
-# ── Utilitas filter tanggal & tren histori ─────────────────────────────────
-
+# ── Filter & tren ────────────────────────────────────────────────────────────
 def filter_date(df: pd.DataFrame, date_col: str,
                 d_from=None, d_to=None) -> pd.DataFrame:
     """Filter df berdasarkan rentang tanggal. Return salinan terfilter."""
-    if df.empty or date_col not in df.columns or (d_from is None and d_to is None):
+    if df.empty or not date_col or date_col not in df.columns or (d_from is None and d_to is None):
         return df
-    ts = pd.to_datetime(df[date_col], errors='coerce', dayfirst=True)
+    ts   = pd.to_datetime(df[date_col], errors='coerce', dayfirst=True)
     mask = pd.Series(True, index=df.index)
     if d_from is not None:
         mask &= ts >= pd.Timestamp(d_from)
@@ -193,40 +188,34 @@ def filter_date(df: pd.DataFrame, date_col: str,
 
 def keuangan_trend(df=None) -> pd.DataFrame:
     """
-    Agregasi Pendapatan / Beban / Laba / RevPAR per bulan.
-    df: DataFrame 3_KEUANGAN yang sudah difilter, atau None untuk data penuh.
+    Agregasi Pendapatan / Beban / Laba / RevPAR per bulan dari transaksi double-entry.
+    df: DataFrame 3_KEUANGAN (boleh difilter per periode); None = baca data penuh.
+    RevPAR dihitung dari total_kamar di 1_PARAMETER — tidak hardcoded.
     """
     if df is None:
         df = read_tab("3_KEUANGAN", key_col="Tanggal")
-    if df.empty:
-        return pd.DataFrame()
-    df = df.copy()
-
-    # Normalisasi kolom bulan — bisa dari "Bulan" (datetime/string) atau "Tanggal"
-    if "Bulan" in df.columns:
-        bulan_dt = pd.to_datetime(df["Bulan"], errors='coerce', dayfirst=True)
-        if bulan_dt.notna().any():
-            df["_bulan"] = bulan_dt.dt.to_period("M").astype(str)
-        else:
-            df["_bulan"] = df["Bulan"].astype(str).str[:7]  # "2026-04"
-    elif "Tanggal" in df.columns:
-        tgl_dt = pd.to_datetime(df["Tanggal"], errors='coerce', dayfirst=True)
-        df["_bulan"] = tgl_dt.dt.to_period("M").astype(str)
-    else:
+    if df.empty or "Tanggal" not in df.columns:
         return pd.DataFrame()
 
-    for c in ["Pendapatan Usaha", "Beban Usaha"]:
-        if c in df.columns:
-            df[c] = df[c].map(to_num)
-        else:
-            df[c] = 0.0
+    # Ambil total_kamar dari parameter (tidak hardcode)
+    param       = get_parameter()
+    total_kamar = max(1, int(to_num(param.get("Total Kamar", 29)) or 29))
 
-    g = df.groupby("_bulan")[["Pendapatan Usaha", "Beban Usaha"]].sum().reset_index()
-    g = g.rename(columns={"_bulan": "Bulan"})
+    d = _compute_keuangan(df)
+    d["_dt"] = pd.to_datetime(d["Tanggal"], errors='coerce', dayfirst=True)
+    d = d.dropna(subset=["_dt"])
+    if d.empty:
+        return pd.DataFrame()
+
+    d["Bulan"] = d["_dt"].dt.to_period("M").astype(str)  # "2026-04"
+    g = (d.groupby("Bulan")[["_pendapatan", "_beban"]].sum()
+          .rename(columns={"_pendapatan": "Pendapatan Usaha", "_beban": "Beban Usaha"})
+          .reset_index())
+    g = g.sort_values("Bulan")
     g["Laba"]   = g["Pendapatan Usaha"] - g["Beban Usaha"]
-    g["RevPAR"] = g["Pendapatan Usaha"] / 29
+    g["RevPAR"] = g["Pendapatan Usaha"] / total_kamar
 
-    # Format label bulan jadi "Apr 2026" untuk tampilan sumbu X
+    # Format label bulan jadi "Apr 2026" untuk sumbu X
     g["Bulan"] = pd.to_datetime(g["Bulan"]).dt.strftime("%b %Y")
     return g.reset_index(drop=True)
 
@@ -241,10 +230,11 @@ def monthly_count(df: pd.DataFrame, date_col: str, label: str = "Count") -> pd.D
     if d.empty:
         return pd.DataFrame(columns=["Bulan", label])
     d["Bulan"] = d["_dt"].dt.to_period("M").astype(str)
-    return (d.groupby("Bulan").size()
-              .reset_index(name=label)
-              .sort_values("Bulan")
-              .reset_index(drop=True))
+    g = (d.groupby("Bulan").size()
+          .reset_index(name=label)
+          .sort_values("Bulan"))
+    g["Bulan"] = pd.to_datetime(g["Bulan"]).dt.strftime("%b %Y")
+    return g.reset_index(drop=True)
 
 
 def monthly_sum(df: pd.DataFrame, date_col: str,
@@ -259,14 +249,14 @@ def monthly_sum(df: pd.DataFrame, date_col: str,
         return pd.DataFrame(columns=["Bulan", label])
     d["Bulan"]   = d["_dt"].dt.to_period("M").astype(str)
     d[value_col] = d[value_col].map(to_num)
-    return (d.groupby("Bulan")[value_col].sum()
-              .reset_index(name=label)
-              .sort_values("Bulan")
-              .reset_index(drop=True))
+    g = (d.groupby("Bulan")[value_col].sum()
+          .reset_index(name=label)
+          .sort_values("Bulan"))
+    g["Bulan"] = pd.to_datetime(g["Bulan"]).dt.strftime("%b %Y")
+    return g.reset_index(drop=True)
 
 
-# ── KPI kalkulasi dari data mentah ─────────────────────────────────────────
-
+# ── Parameter ─────────────────────────────────────────────────────────────────
 def get_parameter() -> dict:
     """Baca 1_PARAMETER, kembalikan dict {Parameter: Nilai}."""
     df = read_tab("1_PARAMETER", "Parameter")
@@ -275,22 +265,26 @@ def get_parameter() -> dict:
     return df.set_index("Parameter")["Nilai"].to_dict()
 
 
+# ── KPI dari data mentah ──────────────────────────────────────────────────────
 def kpi_executive(keu_df: pd.DataFrame, penghuni_df: pd.DataFrame) -> dict:
     """
     Hitung KPI Eksekutif dari data mentah.
-    keu_df       : 3_KEUANGAN (boleh difilter per periode)
-    penghuni_df  : 2_PENGHUNI (selalu current-state, tidak difilter)
+    keu_df       : 3_KEUANGAN terfilter (double-entry format baru)
+    penghuni_df  : 2_PENGHUNI current-state (selalu tanpa filter tanggal)
     """
-    # ── Keuangan ──────────────────────────────────────────────────────────
-    def _col_sum(df, col):
-        return df[col].map(to_num).sum() if (not df.empty and col in df.columns) else 0.0
-
-    pendapatan = _col_sum(keu_df, "Pendapatan Usaha")
-    beban      = _col_sum(keu_df, "Beban Usaha")
+    d          = _compute_keuangan(keu_df)
+    pendapatan = float(d["_pendapatan"].sum()) if "_pendapatan" in d.columns else 0.0
+    beban      = float(d["_beban"].sum())      if "_beban"      in d.columns else 0.0
     laba       = pendapatan - beban
-    margin     = laba / pendapatan if pendapatan != 0 else 0.0
 
-    # ── Hunian (current-state) ─────────────────────────────────────────────
+    # Fix: margin negatif jika rugi, bukan 0
+    if pendapatan > 0:
+        margin = laba / pendapatan
+    elif beban > 0:
+        margin = -1.0      # rugi total — tampilkan ≈ -100%
+    else:
+        margin = 0.0
+
     param       = get_parameter()
     total_kamar = max(1, int(to_num(param.get("Total Kamar", 29)) or 29))
 
@@ -304,18 +298,18 @@ def kpi_executive(keu_df: pd.DataFrame, penghuni_df: pd.DataFrame) -> dict:
 
     occ_k  = (aktif + booking) / total_kamar
     occ_f  = terisi / total_kamar
-    revpar  = pendapatan / total_kamar
+    revpar = pendapatan / total_kamar
 
     return {
-        "pendapatan":      pendapatan,
-        "beban":           beban,
-        "laba":            laba,
-        "margin":          margin,
-        "occ_komitmen":    occ_k,
-        "occ_fisik":       occ_f,
-        "revpar":          revpar,
-        "penghuni_aktif":  aktif,
-        "total_kamar":     total_kamar,
+        "pendapatan":     pendapatan,
+        "beban":          beban,
+        "laba":           laba,
+        "margin":         margin,
+        "occ_komitmen":   occ_k,
+        "occ_fisik":      occ_f,
+        "revpar":         revpar,
+        "penghuni_aktif": aktif,
+        "total_kamar":    total_kamar,
     }
 
 
@@ -326,7 +320,6 @@ def kpi_sales(lead_df: pd.DataFrame,
     n_leads  = len(lead_df)
     n_survey = len(survey_df)
 
-    # Leads belum di-follow-up
     fu_col  = next((c for c in ["Status FU", "Status Follow Up", "Follow Up", "FU"]
                     if not lead_df.empty and c in lead_df.columns), None)
     belum_fu = 0
@@ -334,7 +327,6 @@ def kpi_sales(lead_df: pd.DataFrame,
         belum_fu = int(lead_df[fu_col].astype(str).str.strip()
                        .isin(["", "nan", "-", "Belum"]).sum())
 
-    # Booking & deals
     n_booking = n_batal = n_deal = 0
     nilai_deal = 0.0
     if not booking_df.empty and "Status" in booking_df.columns:
@@ -361,21 +353,31 @@ def kpi_sales(lead_df: pd.DataFrame,
     }
 
 
-def kpi_admin(penghuni_df: pd.DataFrame) -> dict:
-    """Hitung KPI Admin dari status penghuni saat ini (current-state)."""
-    p = penghuni_df
-    if p.empty:
+def kpi_admin(penghuni_df: pd.DataFrame,
+              all_penghuni_df: pd.DataFrame | None = None) -> dict:
+    """
+    Hitung KPI Admin.
+    penghuni_df     : boleh difilter (e.g. by Tgl Jatuh Tempo) untuk KPI berbasis Sisa Hari.
+    all_penghuni_df : full dataset current-state untuk menghitung kamar kosong.
+                      Jika None, pakai penghuni_df.
+    """
+    p     = penghuni_df
+    p_all = all_penghuni_df if all_penghuni_df is not None else penghuni_df
+
+    if p.empty and p_all.empty:
         return {"jatuh_tempo_7": 0, "overdue": 0, "kosong": 0, "kontrak_30": 0}
 
-    sisa = p["Sisa Hari"].map(to_num) if "Sisa Hari" in p.columns else pd.Series(0.0, index=p.index)
+    sisa = (p["Sisa Hari"].map(to_num)
+            if (not p.empty and "Sisa Hari" in p.columns)
+            else pd.Series(dtype=float))
     jatuh_7    = int(((sisa > 0) & (sisa <= 7)).sum())
     overdue    = int((sisa < 0).sum())
     kontrak_30 = int(((sisa > 0) & (sisa <= 30)).sum())
 
-    if "Status Okupansi" in p.columns:
-        kosong = int(p["Status Okupansi"].astype(str).str.strip().eq("Kosong").sum())
-    elif "Status" in p.columns:
-        kosong = int(p["Status"].astype(str).str.strip().eq("Non Aktif").sum())
+    if not p_all.empty and "Status Okupansi" in p_all.columns:
+        kosong = int(p_all["Status Okupansi"].astype(str).str.strip().eq("Kosong").sum())
+    elif not p_all.empty and "Status" in p_all.columns:
+        kosong = int(p_all["Status"].astype(str).str.strip().eq("Non Aktif").sum())
     else:
         kosong = 0
 
@@ -455,14 +457,13 @@ def kpi_operasional(mt_df: pd.DataFrame) -> dict:
         breach = int(mt_df["SLA OK?"].astype(str).str.strip()
                      .isin(["No", "Tidak", "N", "FALSE", "False"]).sum())
 
-    # MTTR — rata-rata hari penyelesaian
     mttr = 0.0
     if "Tgl Lapor/Jadwal" in mt_df.columns and "Tgl Selesai" in mt_df.columns:
-        t0   = pd.to_datetime(mt_df["Tgl Lapor/Jadwal"], errors='coerce', dayfirst=True)
-        t1   = pd.to_datetime(mt_df["Tgl Selesai"],       errors='coerce', dayfirst=True)
-        days = (t1 - t0).dt.days
+        t0    = pd.to_datetime(mt_df["Tgl Lapor/Jadwal"], errors='coerce', dayfirst=True)
+        t1    = pd.to_datetime(mt_df["Tgl Selesai"],       errors='coerce', dayfirst=True)
+        days  = (t1 - t0).dt.days
         valid = days[(days >= 0) & days.notna()]
-        mttr = round(float(valid.mean()), 1) if not valid.empty else 0.0
+        mttr  = round(float(valid.mean()), 1) if not valid.empty else 0.0
 
     biaya = 0.0
     if "Biaya" in mt_df.columns:
@@ -470,8 +471,8 @@ def kpi_operasional(mt_df: pd.DataFrame) -> dict:
 
     rasio = "N/A"
     if "Jenis Perawatan" in mt_df.columns:
-        n_p = int(mt_df["Jenis Perawatan"].astype(str).str.strip().eq("Preventif").sum())
-        n_k = int(mt_df["Jenis Perawatan"].astype(str).str.strip().eq("Korektif").sum())
+        n_p   = int(mt_df["Jenis Perawatan"].astype(str).str.strip().eq("Preventif").sum())
+        n_k   = int(mt_df["Jenis Perawatan"].astype(str).str.strip().eq("Korektif").sum())
         rasio = f"{n_p}:{n_k}"
 
     return {
