@@ -349,13 +349,12 @@ with st.sidebar:
     st.markdown(f"""
 <div style="padding:8px 4px 20px;">
   <div style="display:flex;align-items:center;gap:10px;">
-    <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);width:36px;height:36px;
+    <div style="background:#4F46E5;width:36px;height:36px;
                 border-radius:10px;flex-shrink:0;display:flex;align-items:center;
-                justify-content:center;font-weight:700;font-size:16px;color:white;
-                box-shadow:0 4px 12px rgba(79,70,229,0.35);">K</div>
+                justify-content:center;font-size:20px;line-height:1;">🏠</div>
     <div>
-      <div style="font-weight:700;font-size:16px;color:white;line-height:1.2;">KostPro</div>
-      <div style="font-size:10px;color:#94A3B8;margin-top:1px;">Rumah Pandega</div>
+      <div style="font-weight:700;font-size:15px;color:white;line-height:1.2;">Rumah Pandega</div>
+      <div style="font-size:10px;color:#94A3B8;margin-top:1px;">Dashboard Operasional</div>
     </div>
   </div>
   <div style="margin-top:12px;padding:8px 12px;background:#1E293B;border-radius:10px;
@@ -401,9 +400,9 @@ with st.sidebar:
     st.markdown(f"""
 <div style="background:#1E293B;border-radius:12px;padding:12px 14px;margin:0 2px 10px;">
   <div style="display:flex;align-items:center;gap:10px;">
-    <div style="background:linear-gradient(135deg,#4F46E5,#7C3AED);border-radius:50%;
+    <div style="background:#0F172A;border:1px solid #334155;border-radius:50%;
                 width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;
-                justify-content:center;font-weight:700;font-size:12px;color:white;">
+                justify-content:center;font-weight:700;font-size:12px;color:#E2E8F0;">
       {initials}</div>
     <div>
       <div style="font-size:12px;font-weight:600;color:white;line-height:1.3;">{name}</div>
@@ -505,7 +504,7 @@ if menu == "Executive":
                                   _color_list(vc.index, SCOL), f"{int(vc.sum())} org"),
                             use_container_width=True, config=_CFG)
 
-    st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
     g3, g4 = st.columns(2)
     with g3:
         chart_header("Hunian per Jenis Kamar", "Jumlah kamar terisi saat ini", accent=ac)
@@ -536,18 +535,18 @@ if menu == "Executive":
             empty_state("Data segmen usia tidak tersedia.", "👥")
 
     st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
-    chart_header("Daftar Penghuni", "Data lengkap & status tagihan", accent=ac)
-    if not p.empty:
-        cols = [c for c in ["No Kamar", "Nama Lengkap", "Panggilan", "Jenis Kamar",
-                             "Status", "Tgl Jatuh Tempo", "Sisa Hari",
-                             "Flag Tagih", "Tarif Sewa"] if c in p.columns]
-        st.dataframe(p[cols], use_container_width=True, hide_index=True,
-                     column_config={
-                         "Tarif Sewa": st.column_config.NumberColumn("Tarif Sewa (Rp)", format="Rp %d"),
-                         "Sisa Hari":  st.column_config.NumberColumn("Sisa Hari", format="%d hr"),
-                     })
-    else:
-        empty_state("Belum ada data penghuni.", "👤")
+    with st.expander("📋 Daftar Penghuni — Data lengkap & status tagihan", expanded=False):
+        if not p.empty:
+            cols = [c for c in ["No Kamar", "Nama Lengkap", "Panggilan", "Jenis Kamar",
+                                 "Status", "Tgl Jatuh Tempo", "Sisa Hari",
+                                 "Flag Tagih", "Tarif Sewa"] if c in p.columns]
+            st.dataframe(p[cols], use_container_width=True, hide_index=True,
+                         column_config={
+                             "Tarif Sewa": st.column_config.NumberColumn("Tarif Sewa (Rp)", format="Rp %d"),
+                             "Sisa Hari":  st.column_config.NumberColumn("Sisa Hari", format="%d hr"),
+                         })
+        else:
+            empty_state("Belum ada data penghuni.", "👤")
 
 
 # ════════════════════════════ SALES ═══════════════════════════════════════════
@@ -618,7 +617,7 @@ elif menu == "Sales":
             y=[a for a, _ in fn], x=[b for _, b in fn],
             textinfo="value+percent initial",
             textfont=dict(size=12, color='#374151'),
-            marker=dict(color=["#4F46E5", "#059669", "#F59E0B", "#16A34A"]),
+            marker=dict(color=["#059669", "#34D399", "#F59E0B", "#16A34A"]),
             connector=dict(line=dict(color="#E2E8F0", width=2))
         ))
         fig.update_layout(height=280, margin=dict(t=10, b=10, l=10, r=10),
@@ -638,7 +637,7 @@ elif menu == "Sales":
 
     if not lead_mc.empty and len(lead_mc) >= 2:
         st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
-        chart_header("Tren Leads Bulanan", f"Jumlah leads per bulan · {pbadge}")
+        chart_header("Tren Leads Bulanan", f"Jumlah leads per bulan · {pbadge}", accent=ac)
         fig = go.Figure(go.Bar(
             x=lead_mc["Bulan"], y=lead_mc["Leads"],
             marker_color=ac, marker_line_width=0,
@@ -891,14 +890,14 @@ else:
                           o_prev["breach_sla"] if o_prev else None,
                           good_if_up=False, fmt="count"),
         accent="#DC2626" if o["breach_sla"] > 0 else "#16A34A")
-    kpi(c3, "MTTR",
-        f"{o['mttr']} hari", "Mean Time to Resolve",
+    kpi(c3, "Rata-rata Selesai",
+        f"{o['mttr']} hari", "Rata-rata waktu penyelesaian",
         delta_html=_delta(o["mttr"],
                           o_prev["mttr"] if o_prev else None, good_if_up=False),
         accent=ac)
     kpi(c4, "Biaya Maintenance",
         D.rupiah(o["biaya"]),
-        f"Prev:Korektif = {o['rasio']}",
+        f"Preventif : Korektif = {o['rasio']}",
         delta_html=_delta(o["biaya"],
                           o_prev["biaya"] if o_prev else None, good_if_up=False),
         spark_y=biaya_spark, spark_color=ac, accent=ac)
@@ -910,7 +909,7 @@ else:
         chart_header("Jenis Perawatan", f"Preventif vs Korektif · {pbadge}", accent=ac)
         vc = D.value_counts(mt_use, "Jenis Perawatan")
         if not vc.empty:
-            MCOL = {"Preventif": "#4F46E5", "Korektif": "#EA580C"}
+            MCOL = {"Preventif": "#94A3B8", "Korektif": "#EA580C"}
             st.plotly_chart(bar_chart(vc.index.tolist(), vc.values.tolist(),
                                       _color_list(vc.index, MCOL)),
                             use_container_width=True, config=_CFG)
@@ -951,10 +950,4 @@ else:
     else:
         empty_state("Belum ada data tiket.", "🎫")
 
-st.markdown("""
-<div style="margin-top:24px;padding:12px 16px;background:white;border:1px solid #E8EDF3;
-            border-radius:12px;display:flex;align-items:center;justify-content:space-between;">
-  <span style="font-size:12px;color:#475569;">🔒 Akses terbatas · Data live dari Google Sheets</span>
-  <span style="font-size:11px;color:#64748B;">Cache 5 menit</span>
-</div>
-""", unsafe_allow_html=True)
+st.caption("Data diperbarui setiap 5 menit. Klik **🔄 Refresh data** di sidebar untuk memperbarui sekarang.")
