@@ -84,7 +84,7 @@ _BEBAN_TIPE      = {"Beban", "Beban Non-Operasional"}
 
 def _akun_map() -> dict:
     """Return {Nama Akun: Tipe Akun} dari 3_DAFTAR_AKUN."""
-    df = read_tab("3_DAFTAR_AKUN")
+    df = read_tab("11_DAFTAR_AKUN")
     if df.empty or "Nama Akun" not in df.columns or "Tipe Akun" not in df.columns:
         return {}
     return df.set_index("Nama Akun")["Tipe Akun"].to_dict()
